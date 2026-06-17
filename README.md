@@ -1,13 +1,73 @@
-# Document-to-Audio Pipeline
+# Document to Audio
 
-This repository implements a sophisticated pipeline designed to convert source documents (PDF/DOCX) into fully synthesized podcast audio scripts. The process involves using a Large Language Model (LLM) for script generation and fact-checking, followed by local Text-to-Speech (TTS) synthesis.
+Ingests a PDF or DOCX, turns it into a podcast script via an LLM, fact-checks the
+script against the source, and synthesizes the final audio — all on free tiers and
+local models.
+
+## Stack
+
+- **Orchestration:** LangGraph (open-source)
+- **LLM (scriptwriter + fact-checker):** Gemini 2.5 Flash via Google AI Studio —
+  generous free tier, 1M+ token context window, structured output for reliable
+  fact-check results
+- **Text-to-Speech:** Kokoro-82M (local CPU) — lightweight open-source TTS,
+  studio-quality voices, no API cost
+- **Parsing:** `pypdf` / `python-docx` for document ingestion
+- **Text splitting:** `langchain-text-splitters` (`RecursiveCharacterTextSplitter`)
+
+## Setup
+
+```bash
+pip install langgraph langchain-google-genai langchain-text-splitters \
+            pypdf python-docx kokoro soundfile python-dotenv
+```
+
+A free Google AI Studio API key is required. Set `GOOGLE_API_KEY` in a `.env`
+file — it is loaded with `python-dotenv` and never hardcoded.
+
+## Architecture
+
+### Shared State (`PodcastState`)
+
+| Field | Meaning |
+|---|---|
+| `document_path` | Input — path to the source `.pdf`/`.docx` |
+| `document_name` | Input — base name for the output audio file |
+| `document_text` | Raw text extracted from the document |
+| `chunks` | Document split into processable pieces |
+| `current_chunk_index` | Outer-loop pointer into `chunks` |
+| `script` | Current chunk's draft podcast script |
+| `feedback` | Fact-checker's critique, fed into the next rewrite |
+| `is_factual` | Whether the current chunk's script passed the fact-check |
+| `iteration_count` | Per-chunk rewrite count (reset between chunks; loop-cap key) |
+| `audio_segments` | Accumulated per-chunk audio arrays |
+| `audio_path` | Path to the final combined `.wav` file |
+
+### Nodes
+
+- **`parse_document`** — extracts raw text from the file into `document_text`
+- **`chunk_document`** — splits documents over 16k chars into ~9k-char pieces;
+  initialises outer-loop state
+- **`generate_script`** — Gemini writes/rewrites the script for the current chunk,
+  incorporating any `feedback`
+- **`fact_check_script`** — Gemini compares `script` against the source chunk via
+  structured output; sets `is_factual`, writes `feedback`, increments `iteration_count`
+- **`generate_audio`** — Kokoro synthesises the chunk's audio, appends it to
+  `audio_segments`, writes the running `.wav`, and advances `current_chunk_index`
+
+### Control Loops
+
+- **Inner (rewrite) loop** — after each fact-check, route back to `generate_script`
+  unless `is_factual` is true **or** `iteration_count >= 3` (hard cap per chunk)
+- **Outer (chunk) loop** — after `generate_audio`, continue to the next chunk while
+  `current_chunk_index < len(chunks)`, otherwise `END`
 
 The entire workflow is orchestrated as a LangGraph state machine, ensuring robust, multi-step processing from document ingestion to final audio output.
 
 ## 🚀 Features
 
 *   **Document Ingestion:** Supports reading raw text from PDF and DOCX files using `pypdf` and `python-docx`.
-*   **Script Generation (LLM):** Uses Gemini 1.5 Flash to transform the source material into a coherent, podcast-ready script chunk by chunk.
+*   **Script Generation (LLM):** Uses Gemini 2.5 Flash to transform the source material into a coherent, podcast-ready script chunk by chunk.
 *   **Fact-Checking:** Implements an iterative fact-checking loop where the LLM critiques the generated script against the original document chunk, ensuring factual accuracy before proceeding.
 *   **Audio Synthesis (TTS):** Synthesizes the final audio segments using local TTS models like Kokoro-82M or Edge-TTS.
 *   **Orchestration:** Managed entirely by a LangGraph state machine for reliable, sequential execution of complex steps.
@@ -17,7 +77,7 @@ The entire workflow is orchestrated as a LangGraph state machine, ensuring robus
 The project is built around Python and utilizes several key libraries:
 
 *   **Orchestration:** `langgraph`
-*   **LLM:** `langchain-google-genai` (Gemini 1.5 Flash)
+*   **LLM:** `langchain-google-genai` (Gemini 2.5 Flash)
 *   **TTS:** `soundfile`, Kokoro-82M / Edge-TTS
 *   **Parsing:** `pypdf`, `python-docx`
 
@@ -64,4 +124,4 @@ When invoking the graph, you must provide:
 *   **Scripting Contract:** The fact-check $\rightarrow$ rewrite contract is critical: `generate_script` *must* consume the `feedback` field from the previous step for the inner loop to converge correctly.
 
 ---
-*This project was developed using LangGraph and Gemini 1.5 Flash.*
+*This project was developed using LangGraph and Gemini 2.5 Flash.*
