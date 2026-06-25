@@ -1,3 +1,5 @@
 *.wav
+*.mp3
 .env
 *.zip
+*.docx
