@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Document-to-Audio pipeline: ingest a document (PDF/DOCX), turn it into a podcast script with an LLM, fact-check the script against the source, and synthesize the final audio. Orchestrated as a LangGraph state machine. The design goal is to run entirely on free tiers / local models.
 
-The entire project lives in [main.ipynb](main.ipynb): markdown cells holding the plan/blueprint and the flow diagram, a code cell holding the compiled LangGraph app, and a run cell. The nodes are **fully implemented** — real Gemini calls for scripting/fact-checking and local Kokoro TTS for audio. Long documents are split into chunks and processed one at a time.
+The entire project lives in [docx-to-audio.ipynb](docx-to-audio.ipynb): markdown cells holding the plan/blueprint and the flow diagram, a code cell holding the compiled LangGraph app, and a run cell. The nodes are **fully implemented** — real Gemini calls for scripting/fact-checking and local Kokoro TTS for audio. Long documents are split into chunks and processed one at a time.
 
 ## Intended Stack
 
