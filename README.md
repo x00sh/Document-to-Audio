@@ -106,11 +106,6 @@ graph TD
 
 ## Usage
 
-The main file is [`doc-to-audio.py`](doc-to-audio.py); it builds the compiled
-LangGraph `app` and ends with a run block that invokes it on a source document.
-(The [`docx-to-audio.ipynb`](docx-to-audio.ipynb) notebook is **deprecated** — kept
-only for reference.)
-
 1. Ensure `GOOGLE_API_KEY` is set in your `.env` file.
 2. Point `DOCUMENT_PATH` / `DOCUMENT_NAME` at your source document, then run the
    script.

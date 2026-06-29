@@ -27,8 +27,9 @@ load_dotenv()
 
 _ts = lambda: datetime.now().strftime("%H:%M:%S")
 
-# Single shared LLM for both the scriptwriter and the fact-checker.
-llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite", temperature=0.7)
+# Single shared LLM for both the scriptwriter and the fact-checker, 
+# # LLM set to a low temperature so it doesn't make up facts beyond the source
+llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite", temperature=0.5)
 
 # --- Chunking configuration --------------------------------------------------
 CHUNK_THRESHOLD = 16000

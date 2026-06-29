@@ -8,8 +8,6 @@ Document-to-Audio pipeline: ingest a document (PDF/DOCX), turn it into a podcast
 
 The main file is [doc-to-audio.py](doc-to-audio.py): it builds the compiled LangGraph `app` and ends with a run block that invokes it on a source document. The nodes are **fully implemented** — real Gemini calls for scripting/fact-checking and local Kokoro TTS for audio. Long documents are split into chunks and processed one at a time.
 
-> [docx-to-audio.ipynb](docx-to-audio.ipynb) is **deprecated** — kept only for reference. The notebook also holds the original plan/blueprint markdown and the flow diagram, but all current work should target `doc-to-audio.py`.
-
 ## Intended Stack
 
 - **Orchestration:** LangGraph
