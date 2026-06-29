@@ -75,6 +75,34 @@ dict of the fields it updates.
   `{document_name}_podcast_script.txt`. Finally it advances `current_chunk_index`
   and resets `iteration_count`/`feedback` for the next chunk.
 
+```mermaid
+graph TD
+    Start([START]) --> Parse[parse_document]
+
+    Parse --> Chunk[chunk_document<br/>>16k chars -> 8-10k chunks<br/>else single-chunk array]
+
+    Chunk --> LoopStart{Are there remaining chunks?}
+    LoopStart -- No --> End([END])
+    LoopStart -- Yes: take next chunk --> GenScript[generate_script]
+
+    GenScript --> FactCheck[fact_check_script<br/>compare vs current chunk]
+    FactCheck --> Decision{is_factual OR<br/>iteration_count >= 3?}
+    Decision -- No --> GenScript
+    Decision -- Yes --> GenAudio[generate_audio<br/>append chunk audio<br/>advance to next chunk]
+
+    GenAudio --> LoopStart
+
+    style Start fill:#13751f
+    style Parse fill:#0a2f6d
+    style Chunk fill:#0a2f6d
+    style GenScript fill:#0a2f6d
+    style FactCheck fill:#0a2f6d
+    style Decision fill:#bab407
+    style LoopStart fill:#bab407
+    style GenAudio fill:#ba07b1
+    style End fill:#f23c0e
+```
+
 ### Control Loops
 
 - **Inner (rewrite) loop** — after each fact-check, route back to `generate_script`
