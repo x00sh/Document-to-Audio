@@ -1,10 +1,10 @@
 # Document to Audio
 
-Ingests a PDF or DOCX, turns it into a podcast script via an LLM, fact-checks the
-script against the source, and synthesizes the final audio — designed to run
-entirely on free tiers and local models. The whole pipeline is orchestrated as a
-LangGraph state machine, with long documents split into chunks and processed one
-at a time.
+Have you ever been given a lengthy document to read but don't
+have the time or attention span? Then this pipeline is for you!
+Using a free Gemini API key and a local TTS model, you can turn
+any of your documents into a podcast to listen to in transit or
+to lull yourself to sleep.
 
 ## Stack
 
@@ -14,7 +14,7 @@ at a time.
   context window so full documents fit in one prompt, and structured output for
   reliable fact-check results
 - **Text-to-Speech:** Kokoro-82M via `pykokoro` (`KokoroPipeline` +
-  `PipelineConfig` + `GenerationConfig`), run **locally on GPU**
+  `PipelineConfig` + `GenerationConfig`), run **locally on GPU (or switch "cuda" to "cpu" if you don't have an Nvidia GPU)**
   (`provider="cuda"`, `model_quality="fp32"`) with a blended voice
   (`af_nicole:0.5,af_bella:0.5`). `soundfile` + `numpy` concatenate the per-chunk
   segments into the final `.mp3`.
@@ -131,7 +131,8 @@ result = app.invoke(
 )
 ```
 
-This produces `{document_name}_podcast.mp3` and `{document_name}_podcast_script.txt`.
+This produces `{document_name}_podcast.mp3` and `{document_name}_podcast_script.txt`
+so you can compare the script side-by-side with your source document.
 
 ## Development Notes (For Contributors)
 
