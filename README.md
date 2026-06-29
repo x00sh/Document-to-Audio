@@ -93,13 +93,6 @@ graph TD
     GenAudio --> LoopStart
 
     style Start fill:#13751f
-    style Parse fill:#0a2f6d
-    style Chunk fill:#0a2f6d
-    style GenScript fill:#0a2f6d
-    style FactCheck fill:#0a2f6d
-    style Decision fill:#bab407
-    style LoopStart fill:#bab407
-    style GenAudio fill:#ba07b1
     style End fill:#f23c0e
 ```
 
