@@ -1,4 +1,6 @@
 import os
+import tkinter as tk
+from tkinter import filedialog
 from datetime import datetime
 from typing import TypedDict
 
@@ -57,6 +59,26 @@ def get_doc_converter():
     if _doc_converter is None:
         _doc_converter = DocumentConverter()
     return _doc_converter
+
+
+# --- Document selection helper -----------------------------------------------
+def select_document() -> str:
+    """Open a native file-explorer dialog filtered to PDF/DOCX.
+
+    Returns the selected path, or "" if the user cancels.
+    """
+    root = tk.Tk()
+    root.withdraw()  # hide the empty root window
+    path = filedialog.askopenfilename(
+        title="Select a document to convert to audio",
+        filetypes=[
+            ("Documents", "*.pdf *.docx"),
+            ("PDF", "*.pdf"),
+            ("Word", "*.docx"),
+        ],
+    )
+    root.destroy()
+    return path
 
 
 # --- Document parsing helper -------------------------------------------------
@@ -281,10 +303,14 @@ app = workflow.compile()
 
 
 # --- Run the pipeline --------------------------------------------------------
-# Point this at your source document (.pdf or .docx). Parsing and chunking now
-# happen inside the graph, so we only pass the path and output name.
-DOCUMENT_NAME = "dissertation"
-DOCUMENT_PATH = r"C:\Users\zeesh\Documents\dissertation.docx"
+# Ask the user to pick a source document (.pdf or .docx). Parsing and chunking
+# happen inside the graph, so we only pass the path and output name. If the user
+# cancels the dialog, exit without running the graph.
+DOCUMENT_PATH = select_document()
+if not DOCUMENT_PATH:
+    print("No document selected — exiting.")
+    raise SystemExit(0)
+DOCUMENT_NAME = os.path.splitext(os.path.basename(DOCUMENT_PATH))[0]
 # Each chunk takes several super-steps (generate -> fact-check -> [rewrites] ->
 # audio), so the default recursion_limit of 25 can be hit on long documents.
 # Give the graph generous headroom for many chunks.
