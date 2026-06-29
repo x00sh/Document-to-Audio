@@ -16,7 +16,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from docling.document_converter import DocumentConverter
 
 # TTS + audio output
-from kokoro import KPipeline
+from pykokoro import KokoroPipeline, PipelineConfig
+from pykokoro.generation_config import GenerationConfig
 import soundfile as sf
 import numpy as np
 
@@ -41,7 +42,13 @@ _doc_converter = None
 def get_tts_pipeline():
     global _tts_pipeline
     if _tts_pipeline is None:
-        _tts_pipeline = KPipeline(lang_code="a")  # 'a' = American English
+        config = PipelineConfig(
+            voice="af_nicole:0.5,af_bella:0.5", # use either "af_nicole" or "af_bella"
+            provider="cuda",
+            model_quality="fp32",
+            generation=GenerationConfig(lang="en-us"),
+        )
+        _tts_pipeline = KokoroPipeline(config)
     return _tts_pipeline
 
 def get_doc_converter():
@@ -132,7 +139,7 @@ def generate_script(state: PodcastState):
     - TTS OPTIMIZATION: Write ONLY plain spoken-word prose. Absolutely NO markdown formatting, asterisks, hash symbols, bullet points, or speaker labels.
     - PRONUNCIATION: Spell out symbols and acronyms naturally as they would be spoken (e.g., write "five dollars" instead of "$5", and "L L M" instead of "LLM" or "large language model").
     - COMPLEX DATA: Do not read raw table rows or columns verbatim. Instead, summarize table data naturally as spoken comparisons or descriptions. 
-    - CODE SNIPPETS: If the text contains programming code, explain what the code does conceptually rather than reading raw syntax.
+    - CODE/EQUATIONS: If the text contains programming code or math equations, break down what the code or equation does step-by-step in plain prose.
 
     OUTPUT FORMAT: Return ONLY the raw string of plain text ready to be read by a text-to-speech engine.
 
@@ -193,16 +200,16 @@ def generate_audio(state: PodcastState):
     print(f"[{_ts()}] Generating audio for chunk {idx + 1}/{len(state['chunks'])}...")
 
     pipeline = get_tts_pipeline()
-    segment = np.concatenate(
-        [audio for _graphemes, _phonemes, audio in pipeline(state["script"], voice="af_heart")]
-    )
+    res = pipeline.run(state["script"])
+    segment = res.audio
+    sample_rate = res.sample_rate
 
     audio_segments = state["audio_segments"] + [segment]
 
     # Write the running concatenation each pass so the file is complete whenever
     # the outer loop ends (no separate finalize node, matching the flow diagram).
     audio_path = f"{state['document_name']}_podcast.mp3"
-    sf.write(audio_path, np.concatenate(audio_segments), 24000)  # Kokoro emits 24 kHz audio
+    sf.write(audio_path, np.concatenate(audio_segments), sample_rate)
 
     # Mirror the audio pattern: accumulate finalized scripts and write the full
     # text each pass so the file is complete whenever the outer loop ends.
@@ -275,8 +282,8 @@ app = workflow.compile()
 # --- Run the pipeline --------------------------------------------------------
 # Point this at your source document (.pdf or .docx). Parsing and chunking now
 # happen inside the graph, so we only pass the path and output name.
-DOCUMENT_NAME = "02_Training_Deep_Networks"
-DOCUMENT_PATH = r"C:\Users\Zeeshan\Documents\DeepLearning\02_Training_Deep_Networks.docx"
+DOCUMENT_NAME = "dissertation"
+DOCUMENT_PATH = r"C:\Users\zeesh\Documents\dissertation.docx"
 # Each chunk takes several super-steps (generate -> fact-check -> [rewrites] ->
 # audio), so the default recursion_limit of 25 can be hit on long documents.
 # Give the graph generous headroom for many chunks.
